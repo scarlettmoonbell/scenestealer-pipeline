@@ -1,6 +1,10 @@
 import type { SceneBoundary } from "../scenes/types.js";
 import type { Transcript } from "../transcribe/types.js";
-import type { AudioEnergyEvent, HighlightCandidate, HighlightScorer } from "./types.js";
+import type {
+  AudioEnergyEvent,
+  HighlightCandidate,
+  HighlightScorer,
+} from "./types.js";
 
 /**
  * Feeds the transcript + audio-energy events (applause/laughter spikes) to

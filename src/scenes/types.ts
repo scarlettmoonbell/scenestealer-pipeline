@@ -12,7 +12,10 @@ export interface SceneBoundary {
 export interface SceneDetector {
   detectScenes(videoPath: string): Promise<SceneBoundary[]>;
   /** Snaps a candidate [start, end] window to the nearest real cut points. */
-  snapToScenes(candidate: { startSec: number; endSec: number }, scenes: SceneBoundary[]): {
+  snapToScenes(
+    candidate: { startSec: number; endSec: number },
+    scenes: SceneBoundary[],
+  ): {
     startSec: number;
     endSec: number;
   };

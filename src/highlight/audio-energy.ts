@@ -8,6 +8,8 @@ import type { AudioEnergyEvent } from "./types.js";
  *
  * Not implemented yet — this is the Phase 1 scaffold.
  */
-export async function detectAudioEnergyEvents(_audioPath: string): Promise<AudioEnergyEvent[]> {
+export async function detectAudioEnergyEvents(
+  _audioPath: string,
+): Promise<AudioEnergyEvent[]> {
   throw new Error("not implemented — see README.md Status section");
 }

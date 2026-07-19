@@ -22,7 +22,12 @@ export class PySceneDetectDetector implements SceneDetector {
     const nearest = (t: number) =>
       scenes
         .flatMap((s) => [s.startSec, s.endSec])
-        .reduce((best, cur) => (Math.abs(cur - t) < Math.abs(best - t) ? cur : best));
-    return { startSec: nearest(candidate.startSec), endSec: nearest(candidate.endSec) };
+        .reduce((best, cur) =>
+          Math.abs(cur - t) < Math.abs(best - t) ? cur : best,
+        );
+    return {
+      startSec: nearest(candidate.startSec),
+      endSec: nearest(candidate.endSec),
+    };
   }
 }
