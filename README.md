@@ -30,13 +30,25 @@ runnable standalone, independent of the SaaS wrapper.
 
 ## Status
 
-Phase 1 scaffold: every interface is final-shaped and `snapToScenes` (a
-pure function, no I/O) is real; every I/O-touching implementation
-(`GroqTranscriber`, `PySceneDetectDetector.detectScenes`,
-`ClaudeHighlightScorer`, `detectAudioEnergyEvents`, `FfmpegRenderer`)
-currently throws `not implemented`. See the parent project's
+**Phase 4 done (2026-08-06):** `GroqTranscriber`, `PySceneDetectDetector
+.detectScenes`, `detectAudioEnergyEvents`, and `ClaudeHighlightScorer` are
+all real implementations now, covered by 18 vitest tests (fetch and
+`child_process.execFile` mocked — no live Groq/Anthropic/ffmpeg/scenedetect
+calls in CI). `GroqTranscriber` and `ClaudeHighlightScorer` use plain
+`fetch`, matching `scenestealer-connectors`' `PostizPublishProvider`
+pattern rather than adding an AI-provider SDK dependency.
+`ClaudeHighlightScorer` uses Claude Haiku with structured outputs
+(`output_config.format`) to guarantee parseable JSON — the model choice
+was already decided in this file's own cost-basis section above, not a
+new pick. `detectAudioEnergyEvents` decodes to raw 16kHz mono PCM via
+ffmpeg and computes RMS energy per 0.5s window in-process, rather than
+parsing ffmpeg's own filter debug output, which isn't well-specified
+across versions.
+
+`FfmpegRenderer` (Phase 5, platform-spec rendering) is still the Phase 1
+scaffold and throws `not implemented`. See the parent project's
 [`ROADMAP.md`](https://github.com/scarlettmoonbell/scenestealer-app/blob/main/ROADMAP.md)
-Phase 4 for when this gets built out.
+Phase 5 for when that gets built out.
 
 ## Cost basis (why build, not buy — full reasoning in the parent project's PLAN.md)
 
