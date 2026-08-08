@@ -12,6 +12,14 @@ No dev server — this is a library package, consumed by `scenestealer-app`'s
 worker. Running any implementation that touches `ffmpeg`/`scenedetect`
 locally requires both on `PATH`.
 
+## Pre-commit hooks
+
+`.pre-commit-config.yaml` mirrors `checks.yml`/`docs.yml`/`actionlint.yml`
+locally, before a commit happens — see the comments at the top of that
+file for exactly what's included. Install once per machine (`brew install
+pipx && pipx install pre-commit`), then activate once per clone:
+`pre-commit install`.
+
 ## Documentation
 
 - [PySceneDetect docs](https://www.scenedetect.com/) — `scenedetect` CLI
