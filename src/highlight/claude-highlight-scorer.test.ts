@@ -18,7 +18,10 @@ describe("ClaudeHighlightScorer", () => {
   const audioEvents: AudioEnergyEvent[] = [
     { startSec: 30, endSec: 34, intensity: 4.2 },
   ];
-  const scenes = [{ startSec: 0, endSec: 30 }, { startSec: 30, endSec: 60 }];
+  const scenes = [
+    { startSec: 0, endSec: 30 },
+    { startSec: 30, endSec: 60 },
+  ];
 
   beforeEach(() => {
     scorer = new ClaudeHighlightScorer(apiKey);
@@ -64,7 +67,12 @@ describe("ClaudeHighlightScorer", () => {
 
   it("parses the structured JSON response into HighlightCandidate[]", async () => {
     const highlights = [
-      { startSec: 29, endSec: 35, score: 0.9, reason: "applause + strong line" },
+      {
+        startSec: 29,
+        endSec: 35,
+        score: 0.9,
+        reason: "applause + strong line",
+      },
     ];
     fetchMock.mockResolvedValueOnce(
       jsonResponse({
@@ -72,7 +80,11 @@ describe("ClaudeHighlightScorer", () => {
       }),
     );
 
-    const result = await scorer.scoreHighlights(transcript, audioEvents, scenes);
+    const result = await scorer.scoreHighlights(
+      transcript,
+      audioEvents,
+      scenes,
+    );
 
     expect(result).toEqual(highlights);
   });

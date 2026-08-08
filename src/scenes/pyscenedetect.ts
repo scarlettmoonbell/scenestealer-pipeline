@@ -11,7 +11,10 @@ const execFileAsync = promisify(execFile);
  * wording differences across versions rather than hardcoding indices.
  */
 function parseSceneListCsv(csv: string): SceneBoundary[] {
-  const lines = csv.trim().split("\n").filter((l) => l.trim().length > 0);
+  const lines = csv
+    .trim()
+    .split("\n")
+    .filter((l) => l.trim().length > 0);
   if (lines.length < 2) return [];
 
   const header = lines[0]!.split(",").map((h) => h.trim().toLowerCase());

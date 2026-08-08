@@ -92,7 +92,10 @@ describe("PySceneDetectDetector", () => {
         { startSec: 10, endSec: 30 },
       ];
 
-      const snapped = detector.snapToScenes({ startSec: 8, endSec: 28 }, scenes);
+      const snapped = detector.snapToScenes(
+        { startSec: 8, endSec: 28 },
+        scenes,
+      );
 
       expect(snapped).toEqual({ startSec: 10, endSec: 30 });
     });

@@ -18,7 +18,8 @@ const HIGHLIGHTS_SCHEMA = {
           endSec: { type: "number" },
           score: {
             type: "number",
-            description: "0-1, how likely this window is a strong standalone highlight",
+            description:
+              "0-1, how likely this window is a strong standalone highlight",
           },
           reason: { type: "string" },
         },
@@ -64,7 +65,9 @@ export class ClaudeHighlightScorer implements HighlightScorer {
       body: JSON.stringify({
         model: "claude-haiku-4-5",
         max_tokens: 4096,
-        output_config: { format: { type: "json_schema", schema: HIGHLIGHTS_SCHEMA } },
+        output_config: {
+          format: { type: "json_schema", schema: HIGHLIGHTS_SCHEMA },
+        },
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -102,7 +105,9 @@ function buildPrompt(
         .join("\n")
     : "(none detected)";
   const sceneLines = scenes.length
-    ? scenes.map((s) => `[${s.startSec.toFixed(1)}-${s.endSec.toFixed(1)}]`).join(", ")
+    ? scenes
+        .map((s) => `[${s.startSec.toFixed(1)}-${s.endSec.toFixed(1)}]`)
+        .join(", ")
     : "(none detected)";
 
   return `You are selecting highlight moments from a full-length live theater/performance recording, for short-form clips (social media). Score candidate windows 15-90 seconds long that would work as standalone clips — moments with a clear beginning/end, emotional peak, applause, laughter, or a strong line/moment.
