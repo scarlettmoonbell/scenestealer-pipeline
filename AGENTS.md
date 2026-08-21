@@ -12,6 +12,14 @@ No dev server — this is a library package, consumed by `scenestealer-app`'s
 worker. Running any implementation that touches `ffmpeg`/`scenedetect`
 locally requires both on `PATH`.
 
+**`dist/` is committed, not gitignored** — deliberately, not an
+oversight. Same reasoning as `scenestealer-connectors`' AGENTS.md:
+consumed as a `github:owner/repo#main` git dependency, and pnpm
+resolves that via a tarball download rather than a real `git clone` —
+confirmed neither `prepare` nor `postinstall` ever runs there (no
+`.git` directory to key off). **Run `npm run build` and commit the
+result whenever `src/` changes** — nothing else builds it for you.
+
 ## Pre-commit hooks
 
 `.pre-commit-config.yaml` mirrors `checks.yml`/`docs.yml`/`actionlint.yml`
