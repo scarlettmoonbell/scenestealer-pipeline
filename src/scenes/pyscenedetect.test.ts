@@ -13,6 +13,13 @@ vi.mock("node:child_process", () => ({
   },
 }));
 
+const readFileMock = vi.fn();
+const unlinkMock = vi.fn();
+vi.mock("node:fs/promises", () => ({
+  readFile: (...args: unknown[]) => readFileMock(...args),
+  unlink: (...args: unknown[]) => unlinkMock(...args),
+}));
+
 import { PySceneDetectDetector } from "./pyscenedetect.js";
 
 describe("PySceneDetectDetector", () => {
@@ -21,21 +28,21 @@ describe("PySceneDetectDetector", () => {
   beforeEach(() => {
     detector = new PySceneDetectDetector();
     execFileMock.mockReset();
+    readFileMock.mockReset();
+    unlinkMock.mockReset();
+    execFileMock.mockImplementation((_cmd, _args, callback) => {
+      callback(null, { stdout: "", stderr: "" });
+    });
+    unlinkMock.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  function mockCsvOutput(stdout: string) {
-    execFileMock.mockImplementation((_cmd, _args, callback) => {
-      callback(null, { stdout, stderr: "" });
-    });
-  }
-
   describe("detectScenes", () => {
-    it("invokes scenedetect with the video path and expected flags", async () => {
-      mockCsvOutput(
+    it("invokes scenedetect with the video path and expected flags, then reads the CSV it writes", async () => {
+      readFileMock.mockResolvedValue(
         "Scene Number,Start Frame,Start Timecode,Start Time (seconds),End Frame,End Timecode,End Time (seconds)\n" +
           "1,0,00:00:00.000,0.000,120,00:00:04.800,4.800\n",
       );
@@ -50,13 +57,16 @@ describe("PySceneDetectDetector", () => {
         "/tmp/show.mp4",
         "detect-content",
         "list-scenes",
-        "-n",
+        "-o",
+        "/tmp",
         "-s",
       ]);
+      expect(readFileMock).toHaveBeenCalledWith("/tmp/show-Scenes.csv", "utf8");
+      expect(unlinkMock).toHaveBeenCalledWith("/tmp/show-Scenes.csv");
     });
 
     it("parses CSV rows into SceneBoundary[] by matching header columns", async () => {
-      mockCsvOutput(
+      readFileMock.mockResolvedValue(
         "Scene Number,Start Frame,Start Timecode,Start Time (seconds),End Frame,End Timecode,End Time (seconds)\n" +
           "1,0,00:00:00.000,0.000,120,00:00:04.800,4.800\n" +
           "2,120,00:00:04.800,4.800,300,00:00:12.000,12.000\n",
@@ -71,17 +81,27 @@ describe("PySceneDetectDetector", () => {
     });
 
     it("returns an empty array when there are no data rows", async () => {
-      mockCsvOutput("Scene Number,Start Time (seconds),End Time (seconds)\n");
+      readFileMock.mockResolvedValue(
+        "Scene Number,Start Time (seconds),End Time (seconds)\n",
+      );
 
       expect(await detector.detectScenes("/tmp/show.mp4")).toEqual([]);
     });
 
     it("throws if the CSV header has no recognizable start/end time columns", async () => {
-      mockCsvOutput("foo,bar\n1,2\n");
+      readFileMock.mockResolvedValue("foo,bar\n1,2\n");
 
       await expect(detector.detectScenes("/tmp/show.mp4")).rejects.toThrow(
         /Could not find start\/end time columns/,
       );
+    });
+
+    it("still cleans up the CSV file when parsing throws", async () => {
+      readFileMock.mockResolvedValue("foo,bar\n1,2\n");
+
+      await expect(detector.detectScenes("/tmp/show.mp4")).rejects.toThrow();
+
+      expect(unlinkMock).toHaveBeenCalledWith("/tmp/show-Scenes.csv");
     });
   });
 

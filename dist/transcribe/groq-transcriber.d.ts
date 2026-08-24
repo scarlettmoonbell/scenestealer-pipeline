@@ -5,7 +5,7 @@ import type { Transcriber, Transcript } from "./types.js";
  * Transcriber interface if that math ever changes.
  */
 export declare class GroqTranscriber implements Transcriber {
-    private readonly apiKey;
-    constructor(apiKey: string);
-    transcribe(audioPath: string): Promise<Transcript>;
+  private readonly apiKey;
+  constructor(apiKey: string);
+  transcribe(audioPath: string): Promise<Transcript>;
 }

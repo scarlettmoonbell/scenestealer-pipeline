@@ -9,5 +9,5 @@ import type { RenderRequest, Renderer } from "./types.js";
  * Not implemented yet — this is the Phase 1 scaffold.
  */
 export declare class FfmpegRenderer implements Renderer {
-    render(_request: RenderRequest): Promise<void>;
+  render(_request: RenderRequest): Promise<void>;
 }

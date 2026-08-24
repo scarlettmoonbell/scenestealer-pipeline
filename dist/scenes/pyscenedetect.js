@@ -1,36 +1,44 @@
 import { execFile } from "node:child_process";
+import { readFile, unlink } from "node:fs/promises";
+import { basename, dirname, extname, join } from "node:path";
 import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 /**
- * Parses `scenedetect ... list-scenes -n -s` stdout into SceneBoundary[].
- * Column names, not positions, are matched — PySceneDetect's docs don't
- * pin an exact header spec, so this is deliberately resilient to minor
- * wording differences across versions rather than hardcoding indices.
+ * Parses a scenedetect `list-scenes` CSV file's contents into
+ * SceneBoundary[]. Column names, not positions, are matched —
+ * PySceneDetect's docs don't pin an exact header spec, so this is
+ * deliberately resilient to minor wording differences across versions
+ * rather than hardcoding indices.
  */
 function parseSceneListCsv(csv) {
-    const lines = csv
-        .trim()
-        .split("\n")
-        .filter((l) => l.trim().length > 0);
-    if (lines.length < 2)
-        return [];
-    const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
-    // Match on "seconds", not just "time" — "Start Timecode" also contains
-    // "time" as a substring and would otherwise be picked over the real
-    // "Start Time (seconds)" numeric column (hit this for real: matched
-    // "Start Timecode" first, then Number("00:00:00.000") produced NaN).
-    const startIdx = header.findIndex((h) => h.includes("start") && h.includes("seconds"));
-    const endIdx = header.findIndex((h) => h.includes("end") && h.includes("seconds"));
-    if (startIdx === -1 || endIdx === -1) {
-        throw new Error(`Could not find start/end time columns in scenedetect CSV header: ${lines[0]}`);
-    }
-    return lines.slice(1).map((line) => {
-        const cols = line.split(",");
-        return {
-            startSec: Number(cols[startIdx]),
-            endSec: Number(cols[endIdx]),
-        };
-    });
+  const lines = csv
+    .trim()
+    .split("\n")
+    .filter((l) => l.trim().length > 0);
+  if (lines.length < 2) return [];
+  const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
+  // Match on "seconds", not just "time" — "Start Timecode" also contains
+  // "time" as a substring and would otherwise be picked over the real
+  // "Start Time (seconds)" numeric column (hit this for real: matched
+  // "Start Timecode" first, then Number("00:00:00.000") produced NaN).
+  const startIdx = header.findIndex(
+    (h) => h.includes("start") && h.includes("seconds"),
+  );
+  const endIdx = header.findIndex(
+    (h) => h.includes("end") && h.includes("seconds"),
+  );
+  if (startIdx === -1 || endIdx === -1) {
+    throw new Error(
+      `Could not find start/end time columns in scenedetect CSV header: ${lines[0]}`,
+    );
+  }
+  return lines.slice(1).map((line) => {
+    const cols = line.split(",");
+    return {
+      startSec: Number(cols[startIdx]),
+      endSec: Number(cols[endIdx]),
+    };
+  });
 }
 /**
  * Shells out to the `scenedetect` CLI (from PySceneDetect, BSD-3-Clause)
@@ -40,29 +48,48 @@ function parseSceneListCsv(csv) {
  * scenestealer-app's Dockerfile).
  */
 export class PySceneDetectDetector {
-    async detectScenes(videoPath) {
-        // -n: print the scene list to stdout instead of writing a CSV file.
-        // -s: RFC 4180 compliance — omit the leading "cutting list" row so the
-        // first line is the real column header.
-        const { stdout } = await execFileAsync("scenedetect", [
-            "-i",
-            videoPath,
-            "detect-content",
-            "list-scenes",
-            "-n",
-            "-s",
-        ]);
-        return parseSceneListCsv(stdout);
+  async detectScenes(videoPath) {
+    // list-scenes always *writes* its CSV to a file — confirmed for
+    // real against PySceneDetect 0.7.1: -n/--no-output-file suppresses
+    // that file, but doesn't redirect the CSV to stdout as its help
+    // text implies; it prints a human-readable table instead, not
+    // machine-parseable output. So this deliberately omits -n, points
+    // -o at the video's own directory, and reads the resulting file —
+    // $VIDEO_NAME-Scenes.csv is PySceneDetect's own default naming.
+    // -s: RFC 4180 compliance — omit the leading "cutting list" row so
+    // the first line is the real column header.
+    const outDir = dirname(videoPath);
+    const csvPath = join(
+      outDir,
+      `${basename(videoPath, extname(videoPath))}-Scenes.csv`,
+    );
+    await execFileAsync("scenedetect", [
+      "-i",
+      videoPath,
+      "detect-content",
+      "list-scenes",
+      "-o",
+      outDir,
+      "-s",
+    ]);
+    try {
+      const csv = await readFile(csvPath, "utf8");
+      return parseSceneListCsv(csv);
+    } finally {
+      await unlink(csvPath).catch(() => {});
     }
-    snapToScenes(candidate, scenes) {
-        if (scenes.length === 0)
-            return candidate;
-        const nearest = (t) => scenes
-            .flatMap((s) => [s.startSec, s.endSec])
-            .reduce((best, cur) => Math.abs(cur - t) < Math.abs(best - t) ? cur : best);
-        return {
-            startSec: nearest(candidate.startSec),
-            endSec: nearest(candidate.endSec),
-        };
-    }
+  }
+  snapToScenes(candidate, scenes) {
+    if (scenes.length === 0) return candidate;
+    const nearest = (t) =>
+      scenes
+        .flatMap((s) => [s.startSec, s.endSec])
+        .reduce((best, cur) =>
+          Math.abs(cur - t) < Math.abs(best - t) ? cur : best,
+        );
+    return {
+      startSec: nearest(candidate.startSec),
+      endSec: nearest(candidate.endSec),
+    };
+  }
 }

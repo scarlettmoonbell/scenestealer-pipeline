@@ -7,4 +7,6 @@ import type { AudioEnergyEvent } from "./types.js";
  * moments — the differentiator this pipeline is built around for
  * live-recording highlight detection.
  */
-export declare function detectAudioEnergyEvents(audioPath: string): Promise<AudioEnergyEvent[]>;
+export declare function detectAudioEnergyEvents(
+  audioPath: string,
+): Promise<AudioEnergyEvent[]>;

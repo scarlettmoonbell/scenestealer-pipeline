@@ -7,12 +7,15 @@ import type { SceneBoundary, SceneDetector } from "./types.js";
  * scenestealer-app's Dockerfile).
  */
 export declare class PySceneDetectDetector implements SceneDetector {
-    detectScenes(videoPath: string): Promise<SceneBoundary[]>;
-    snapToScenes(candidate: {
-        startSec: number;
-        endSec: number;
-    }, scenes: SceneBoundary[]): {
-        startSec: number;
-        endSec: number;
-    };
+  detectScenes(videoPath: string): Promise<SceneBoundary[]>;
+  snapToScenes(
+    candidate: {
+      startSec: number;
+      endSec: number;
+    },
+    scenes: SceneBoundary[],
+  ): {
+    startSec: number;
+    endSec: number;
+  };
 }

@@ -1,14 +1,17 @@
 import { execFile } from "node:child_process";
+import { readFile, unlink } from "node:fs/promises";
+import { basename, dirname, extname, join } from "node:path";
 import { promisify } from "node:util";
 import type { SceneBoundary, SceneDetector } from "./types.js";
 
 const execFileAsync = promisify(execFile);
 
 /**
- * Parses `scenedetect ... list-scenes -n -s` stdout into SceneBoundary[].
- * Column names, not positions, are matched — PySceneDetect's docs don't
- * pin an exact header spec, so this is deliberately resilient to minor
- * wording differences across versions rather than hardcoding indices.
+ * Parses a scenedetect `list-scenes` CSV file's contents into
+ * SceneBoundary[]. Column names, not positions, are matched —
+ * PySceneDetect's docs don't pin an exact header spec, so this is
+ * deliberately resilient to minor wording differences across versions
+ * rather than hardcoding indices.
  */
 function parseSceneListCsv(csv: string): SceneBoundary[] {
   const lines = csv
@@ -52,18 +55,37 @@ function parseSceneListCsv(csv: string): SceneBoundary[] {
  */
 export class PySceneDetectDetector implements SceneDetector {
   async detectScenes(videoPath: string): Promise<SceneBoundary[]> {
-    // -n: print the scene list to stdout instead of writing a CSV file.
-    // -s: RFC 4180 compliance — omit the leading "cutting list" row so the
-    // first line is the real column header.
-    const { stdout } = await execFileAsync("scenedetect", [
+    // list-scenes always *writes* its CSV to a file — confirmed for
+    // real against PySceneDetect 0.7.1: -n/--no-output-file suppresses
+    // that file, but doesn't redirect the CSV to stdout as its help
+    // text implies; it prints a human-readable table instead, not
+    // machine-parseable output. So this deliberately omits -n, points
+    // -o at the video's own directory, and reads the resulting file —
+    // $VIDEO_NAME-Scenes.csv is PySceneDetect's own default naming.
+    // -s: RFC 4180 compliance — omit the leading "cutting list" row so
+    // the first line is the real column header.
+    const outDir = dirname(videoPath);
+    const csvPath = join(
+      outDir,
+      `${basename(videoPath, extname(videoPath))}-Scenes.csv`,
+    );
+
+    await execFileAsync("scenedetect", [
       "-i",
       videoPath,
       "detect-content",
       "list-scenes",
-      "-n",
+      "-o",
+      outDir,
       "-s",
     ]);
-    return parseSceneListCsv(stdout);
+
+    try {
+      const csv = await readFile(csvPath, "utf8");
+      return parseSceneListCsv(csv);
+    } finally {
+      await unlink(csvPath).catch(() => {});
+    }
   }
 
   snapToScenes(

@@ -1,13 +1,13 @@
 import type { PlatformSpecKey } from "./platform-specs.js";
 export interface RenderRequest {
-    sourcePath: string;
-    startSec: number;
-    endSec: number;
-    target: PlatformSpecKey;
-    outputPath: string;
-    /** Face-tracked vertical reframe instead of a naive center-crop, for wide stage shots. */
-    smartReframe: boolean;
-    captionBurnIn?: string;
+  sourcePath: string;
+  startSec: number;
+  endSec: number;
+  target: PlatformSpecKey;
+  outputPath: string;
+  /** Face-tracked vertical reframe instead of a naive center-crop, for wide stage shots. */
+  smartReframe: boolean;
+  captionBurnIn?: string;
 }
 /**
  * Shells out to ffmpeg as a subprocess — never linked into this package's
@@ -15,5 +15,5 @@ export interface RenderRequest {
  * matters regardless of whether the ffmpeg build includes libx264 (GPL).
  */
 export interface Renderer {
-    render(request: RenderRequest): Promise<void>;
+  render(request: RenderRequest): Promise<void>;
 }

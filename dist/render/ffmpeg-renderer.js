@@ -8,7 +8,7 @@
  * Not implemented yet — this is the Phase 1 scaffold.
  */
 export class FfmpegRenderer {
-    async render(_request) {
-        throw new Error("not implemented — see README.md Status section");
-    }
+  async render(_request) {
+    throw new Error("not implemented — see README.md Status section");
+  }
 }
