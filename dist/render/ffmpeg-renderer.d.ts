@@ -6,8 +6,13 @@ import type { RenderRequest, Renderer } from "./types.js";
  * (openh264 preferred over libx264 to sidestep the GPL question entirely —
  * see the parent project's PLAN.md license-compatibility section).
  *
- * Not implemented yet — this is the Phase 1 scaffold.
+ * smartReframe is deferred to a beta-phase feature — real face detection
+ * (sampling frames, tracking a subject, smoothing a crop path) is a
+ * meaningfully bigger undertaking than the mechanical encode/crop this
+ * implements. Requesting it throws explicitly rather than silently
+ * downgrading to a center-crop, so the gap stays visible instead of
+ * quietly producing a worse result than asked for.
  */
 export declare class FfmpegRenderer implements Renderer {
-  render(_request: RenderRequest): Promise<void>;
+  render(request: RenderRequest): Promise<void>;
 }
