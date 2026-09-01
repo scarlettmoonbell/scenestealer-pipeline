@@ -30,6 +30,11 @@ pipx && pipx install pre-commit`), then activate once per clone:
 
 ## Documentation
 
+- [`.conventions/CONVENTIONS.md`](.conventions/CONVENTIONS.md),
+  [`.conventions/DEVOPS.md`](.conventions/DEVOPS.md),
+  [`.conventions/INTERFACE.md`](.conventions/INTERFACE.md) — this
+  account's cross-project engineering conventions; read before starting
+  any nontrivial work.
 - [PySceneDetect docs](https://www.scenedetect.com/) — `scenedetect` CLI
   usage, what `PySceneDetectDetector` shells out to.
 - [FFmpeg documentation](https://ffmpeg.org/documentation.html) — what
