@@ -1,6 +1,6 @@
 ## Development
 
-```
+```bash
 npm install
 npm run build      # tsc -p tsconfig.json
 npm run typecheck   # tsc --noEmit

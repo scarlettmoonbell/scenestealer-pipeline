@@ -1,0 +1,15 @@
+{
+  // Belt-and-suspenders: markdownlint-cli2 is supposed to honor
+  // .gitignore's node_modules/ on its own, but adding this config file
+  // changed that in local testing — explicit ignore instead of trusting
+  // the default. Same as scenestealer-app/scenestealer-connectors/
+  // scenestealer-infra.
+  "ignores": ["**/node_modules/**"],
+  "config": {
+    // AGENTS.md/CLAUDE.md deliberately open with "## Development", not an
+    // H1 — CLAUDE.md is a symlink to AGENTS.md, and neither is meant to
+    // read as a standalone document with its own title. Same convention
+    // as the sibling repos.
+    "MD041": false,
+  },
+}
