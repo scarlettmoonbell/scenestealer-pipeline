@@ -1,0 +1,5 @@
+# The shared conventions repo, tracked as a git submodule at .conventions —
+# formatted per that repo's own style, not this one's. CI's checkout never
+# initializes it (no `submodules: true`), so this only matters for a local
+# `prettier --check .` after a contributor runs `git submodule update --init`.
+.conventions/
