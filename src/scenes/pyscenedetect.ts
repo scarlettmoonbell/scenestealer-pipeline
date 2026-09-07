@@ -93,15 +93,33 @@ export class PySceneDetectDetector implements SceneDetector {
     scenes: SceneBoundary[],
   ): { startSec: number; endSec: number } {
     if (scenes.length === 0) return candidate;
-    const nearest = (t: number) =>
-      scenes
-        .flatMap((s) => [s.startSec, s.endSec])
-        .reduce((best, cur) =>
-          Math.abs(cur - t) < Math.abs(best - t) ? cur : best,
-        );
-    return {
-      startSec: nearest(candidate.startSec),
-      endSec: nearest(candidate.endSec),
-    };
+    const boundaries = scenes.flatMap((s) => [s.startSec, s.endSec]);
+    const nearest = (t: number, pool: number[]): number =>
+      pool.reduce((best, cur) =>
+        Math.abs(cur - t) < Math.abs(best - t) ? cur : best,
+      );
+
+    const snappedStart = nearest(candidate.startSec, boundaries);
+
+    // Restricted to boundaries strictly *after* the snapped start, so
+    // start/end can never collide or invert — snapping both
+    // independently to whichever boundary is nearest *each* (the
+    // previous logic) could produce a zero-length or even negative-
+    // length "clip" whenever both landed nearest the same boundary.
+    // Confirmed for real: a video whose content-based scene detection
+    // found only a handful of boundaries across ~17 minutes produced
+    // exactly this — 5 of 9 AI-suggested highlights collapsed to
+    // zero-length clips (see scenestealer-app's ROADMAP.md, 2026-09-07).
+    // Falls back to the candidate's own original duration, anchored at
+    // the snapped start, when no later boundary exists to snap the end
+    // to — still a real, positive-duration clip rather than a
+    // degenerate one.
+    const laterBoundaries = boundaries.filter((b) => b > snappedStart);
+    const snappedEnd =
+      laterBoundaries.length > 0
+        ? nearest(candidate.endSec, laterBoundaries)
+        : snappedStart + (candidate.endSec - candidate.startSec);
+
+    return { startSec: snappedStart, endSec: snappedEnd };
   }
 }

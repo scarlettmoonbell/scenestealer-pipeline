@@ -124,5 +124,44 @@ describe("PySceneDetectDetector", () => {
       const candidate = { startSec: 5, endSec: 15 };
       expect(detector.snapToScenes(candidate, [])).toEqual(candidate);
     });
+
+    it("never collapses to a zero-length clip when start and end are both nearest the same boundary", () => {
+      // Sparse boundaries, confirmed for real against a video whose
+      // content-based scene detection found only a handful of cuts
+      // across ~17 minutes (see scenestealer-app's ROADMAP.md,
+      // 2026-09-07) — a candidate whose own start/end are both close
+      // to 130 used to collapse to {130, 130}.
+      const scenes = [
+        { startSec: 0, endSec: 130 },
+        { startSec: 130, endSec: 1016 },
+        { startSec: 1016, endSec: 1031 },
+      ];
+
+      const snapped = detector.snapToScenes(
+        { startSec: 128, endSec: 132 },
+        scenes,
+      );
+
+      expect(snapped.startSec).toBe(130);
+      expect(snapped.endSec).toBeGreaterThan(snapped.startSec);
+      expect(snapped.endSec).toBe(1016);
+    });
+
+    it("falls back to the candidate's own duration, anchored at the snapped start, when no later boundary exists", () => {
+      const scenes = [
+        { startSec: 0, endSec: 10 },
+        { startSec: 10, endSec: 30 },
+      ];
+
+      // Both start and end are nearest the very last boundary (30) —
+      // there is nothing later to snap the end to.
+      const snapped = detector.snapToScenes(
+        { startSec: 29, endSec: 34 },
+        scenes,
+      );
+
+      expect(snapped.startSec).toBe(30);
+      expect(snapped.endSec).toBe(35);
+    });
   });
 });
