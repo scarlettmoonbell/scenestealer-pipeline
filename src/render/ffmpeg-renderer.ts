@@ -28,17 +28,19 @@ export class FfmpegRenderer implements Renderer {
     }
 
     const spec = PLATFORM_SPECS[request.target];
-    const duration = request.endSec - request.startSec;
-    if (
-      "minDurationSec" in spec &&
-      "maxDurationSec" in spec &&
-      (duration < spec.minDurationSec || duration > spec.maxDurationSec)
-    ) {
-      throw new Error(
-        `${request.target} requires a ${spec.minDurationSec}-${spec.maxDurationSec}s clip, got ${duration.toFixed(1)}s`,
-      );
-    }
 
+    // minDurationSec/maxDurationSec on PLATFORM_SPECS describe what a
+    // *platform* will accept when posting, not a constraint on
+    // encoding itself — ffmpeg can produce a clip of any length just
+    // fine. Confirmed for real (2026-09-07): gating render on this
+    // meant a legitimate longer highlight (332s) couldn't be rendered
+    // at all, not even to look at or post somewhere without the limit
+    // (e.g. as a YouTube video, or a direct download) — moved this
+    // check to apps/api's POST /clips/:id/publish instead, right
+    // before a clip is actually posted to a specific platform, which
+    // is the point where the constraint is real. This function still
+    // produces the platform's *format* (aspect ratio, codec, GOP
+    // structure) regardless of duration.
     const args = [
       "-y",
       "-ss",

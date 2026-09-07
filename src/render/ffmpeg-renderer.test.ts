@@ -37,19 +37,28 @@ describe("FfmpegRenderer", () => {
     expect(execFileMock).not.toHaveBeenCalled();
   });
 
-  it("rejects a clip outside instagram-reels' duration range before touching ffmpeg", async () => {
-    await expect(
-      renderer.render({
-        sourcePath: "/tmp/show.mp4",
-        startSec: 0,
-        endSec: 2,
-        target: "instagram-reels",
-        outputPath: "/tmp/out.mp4",
-        smartReframe: false,
-      }),
-    ).rejects.toThrow(/5-90s/);
+  // Confirmed for real (2026-09-07): gating this on PLATFORM_SPECS'
+  // minDurationSec/maxDurationSec meant a legitimate longer highlight
+  // couldn't be rendered at all, not even to look at or post
+  // somewhere the limit doesn't apply — that constraint now lives in
+  // apps/api's POST /clips/:id/publish, right before a clip is
+  // actually posted to a specific platform. Encoding itself doesn't
+  // care how long the clip is.
+  it("renders a clip outside instagram-reels' posting duration range — that's a publish-time concern now, not a render-time one", async () => {
+    execFileMock.mockImplementation((_cmd, _args, callback) => {
+      callback(null, { stdout: "", stderr: "" });
+    });
 
-    expect(execFileMock).not.toHaveBeenCalled();
+    await renderer.render({
+      sourcePath: "/tmp/show.mp4",
+      startSec: 0,
+      endSec: 332,
+      target: "instagram-reels",
+      outputPath: "/tmp/out.mp4",
+      smartReframe: false,
+    });
+
+    expect(execFileMock).toHaveBeenCalledTimes(1);
   });
 
   it("trims without a crop filter for youtube-full (source aspect preserved)", async () => {
