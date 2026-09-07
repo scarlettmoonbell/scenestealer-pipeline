@@ -60,6 +60,14 @@ export class ClaudeHighlightScorer {
       throw new Error(`Claude highlight scoring failed: ${res.status} ${body}`);
     }
     const data = await res.json();
+    // Real per-show cost data point, not just the README's "a few
+    // cents" estimate — cheap enough to always log (this call happens
+    // once per analyze run, not per-request-in-a-hot-path).
+    if (data.usage) {
+      console.log(
+        `[ClaudeHighlightScorer] inputTokens=${data.usage.input_tokens} outputTokens=${data.usage.output_tokens}`,
+      );
+    }
     const textBlock = data.content.find((b) => b.type === "text");
     if (!textBlock?.text) {
       throw new Error("Claude highlight scoring returned no text content");
