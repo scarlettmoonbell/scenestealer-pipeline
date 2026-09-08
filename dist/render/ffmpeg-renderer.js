@@ -44,6 +44,20 @@ export class FfmpegRenderer {
       String(request.endSec),
       "-i",
       request.sourcePath,
+      // Without explicit mapping, ffmpeg's default stream selection can
+      // carry an iPhone recording's QuickTime timecode track (`tmcd`,
+      // linked to its video stream) straight into the output alongside
+      // the real video/audio — confirmed for real (2026-09-08): a
+      // rendered clip from real theater-show iPhone footage had exactly
+      // this as a third `data`-type stream, and Instagram's Content
+      // Publishing API rejected the upload outright (error 2207076) on
+      // that exact file. `0:a:0?` (trailing `?`) keeps today's graceful
+      // behavior for a source with no audio at all — mandatory would
+      // hard-fail the render instead of just omitting audio.
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a:0?",
     ];
     // aspectRatio: null (youtube-full) means "preserve the source" — no
     // crop filter at all. 9:16 targets get a plain center-crop for now;
