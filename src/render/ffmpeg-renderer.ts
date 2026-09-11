@@ -91,7 +91,20 @@ export class FfmpegRenderer implements Renderer {
     if ("closedGop" in spec && spec.closedGop) {
       args.push("-flags", "+cgop");
     }
-    args.push("-c:a", "aac", request.outputPath);
+    // Without this, ffmpeg's mp4 muxer writes moov (the atom holding
+    // duration/dimensions/sample tables) after mdat (the actual frame
+    // data) — confirmed for real (2026-09-11) on the exact file behind
+    // yet another 2207076 failure, *after* both the stream-mapping and
+    // metadata-stripping fixes above: pulled the real rendered object
+    // back from R2 and found mdat at byte 40, moov only at the very
+    // end. Instagram's Content Publishing API reads a file's leading
+    // bytes to validate it before committing to the full download,
+    // same as most platforms' ingestion — moov-last is a well-known
+    // cause of exactly this class of opaque "processing failed" error.
+    // `+faststart` makes ffmpeg do a second pass moving moov to the
+    // front; verified locally that it does (byte 32 instead of the
+    // file's end) against this same real file.
+    args.push("-c:a", "aac", "-movflags", "+faststart", request.outputPath);
 
     await execFileAsync("ffmpeg", args);
   }

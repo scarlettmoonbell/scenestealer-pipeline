@@ -98,6 +98,8 @@ describe("FfmpegRenderer", () => {
       "yuv420p",
       "-c:a",
       "aac",
+      "-movflags",
+      "+faststart",
       "/tmp/out.mp4",
     ]);
   });
@@ -141,6 +143,8 @@ describe("FfmpegRenderer", () => {
       "+cgop",
       "-c:a",
       "aac",
+      "-movflags",
+      "+faststart",
       "/tmp/reel.mp4",
     ]);
   });
