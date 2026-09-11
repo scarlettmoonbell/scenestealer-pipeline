@@ -75,10 +75,27 @@ export class FfmpegRenderer {
       "-1",
     ];
     // aspectRatio: null (youtube-full) means "preserve the source" — no
-    // crop filter at all. 9:16 targets get a plain center-crop for now;
-    // ffmpeg's crop filter centers by default when x/y aren't given.
+    // crop/pad filter at all. A 9:16 target either center-crops (fills
+    // the frame, cutting off the sides — ffmpeg's crop filter centers
+    // by default when x/y aren't given) or pads (keeps the whole source
+    // frame, letterboxed with black bars) — requested for real
+    // (2026-09-11) after a widescreen stage shot's crop cut off most of
+    // the actual picture. Pad's height is computed from the source's
+    // own width (iw*16/9), not a fixed pixel size, matching crop's own
+    // convention of deriving output size from the input rather than a
+    // hardcoded resolution; `max(ih, ...)` guards a source already
+    // taller than 16:9 (padding to something shorter than the input is
+    // invalid), and `trunc(.../2)*2` keeps the result even, which
+    // yuv420p encoding requires.
     if (spec.aspectRatio === "9:16") {
-      args.push("-vf", "crop=ih*9/16:ih");
+      if (request.fitMode === "pad") {
+        args.push(
+          "-vf",
+          "pad=w=iw:h=trunc(max(ih\\,iw*16/9)/2)*2:x=0:y=(oh-ih)/2:color=black",
+        );
+      } else {
+        args.push("-vf", "crop=ih*9/16:ih");
+      }
     }
     args.push("-c:v", "libx264", "-pix_fmt", "yuv420p");
     if ("closedGop" in spec && spec.closedGop) {

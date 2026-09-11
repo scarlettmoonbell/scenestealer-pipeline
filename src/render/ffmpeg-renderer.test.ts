@@ -149,6 +149,29 @@ describe("FfmpegRenderer", () => {
     ]);
   });
 
+  it("pads (letterboxes) instead of cropping when fitMode is pad", async () => {
+    execFileMock.mockImplementation((_cmd, _args, callback) => {
+      callback(null, { stdout: "", stderr: "" });
+    });
+
+    await renderer.render({
+      sourcePath: "/tmp/show.mp4",
+      startSec: 0,
+      endSec: 15,
+      target: "instagram-reels",
+      outputPath: "/tmp/reel.mp4",
+      smartReframe: false,
+      fitMode: "pad",
+    });
+
+    const [, args] = execFileMock.mock.calls[0]!;
+    expect(args).toContain("-vf");
+    expect(args[args.indexOf("-vf") + 1]).toBe(
+      "pad=w=iw:h=trunc(max(ih\\,iw*16/9)/2)*2:x=0:y=(oh-ih)/2:color=black",
+    );
+    expect(args).not.toContain("crop=ih*9/16:ih");
+  });
+
   it("propagates a real ffmpeg failure", async () => {
     execFileMock.mockImplementation((_cmd, _args, callback) => {
       callback(new Error("ffmpeg exited with code 1"), null);
