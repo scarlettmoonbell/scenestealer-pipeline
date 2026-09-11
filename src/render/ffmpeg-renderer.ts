@@ -63,6 +63,21 @@ export class FfmpegRenderer implements Renderer {
       "0:v:0",
       "-map",
       "0:a:0?",
+      // `-map` alone does NOT stop this: confirmed for real (2026-09-11)
+      // that the SAME 2207076 failure recurred on a render made *after*
+      // the fix above shipped. Root-caused with a local repro (a
+      // synthetic source built with `-timecode`, matching the real
+      // file's exact stream shape): the mov demuxer puts the timecode
+      // value on the *video stream's own metadata* (a `timecode` tag),
+      // and ffmpeg's mov muxer regenerates a fresh tmcd track from that
+      // tag on output — independent of whether the original standalone
+      // timecode stream was ever mapped in. Verified locally that only
+      // stripping metadata actually removes it; the explicit `-map` above
+      // is kept regardless, since it's still correct for genuinely
+      // multi-track sources (e.g. a second video/audio stream) that
+      // `-map_metadata` alone wouldn't drop.
+      "-map_metadata",
+      "-1",
     ];
 
     // aspectRatio: null (youtube-full) means "preserve the source" — no
