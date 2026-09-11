@@ -44,35 +44,6 @@ export class FfmpegRenderer {
       String(request.endSec),
       "-i",
       request.sourcePath,
-      // Without explicit mapping, ffmpeg's default stream selection can
-      // carry an iPhone recording's QuickTime timecode track (`tmcd`,
-      // linked to its video stream) straight into the output alongside
-      // the real video/audio — confirmed for real (2026-09-08): a
-      // rendered clip from real theater-show iPhone footage had exactly
-      // this as a third `data`-type stream, and Instagram's Content
-      // Publishing API rejected the upload outright (error 2207076) on
-      // that exact file. `0:a:0?` (trailing `?`) keeps today's graceful
-      // behavior for a source with no audio at all — mandatory would
-      // hard-fail the render instead of just omitting audio.
-      "-map",
-      "0:v:0",
-      "-map",
-      "0:a:0?",
-      // `-map` alone does NOT stop this: confirmed for real (2026-09-11)
-      // that the SAME 2207076 failure recurred on a render made *after*
-      // the fix above shipped. Root-caused with a local repro (a
-      // synthetic source built with `-timecode`, matching the real
-      // file's exact stream shape): the mov demuxer puts the timecode
-      // value on the *video stream's own metadata* (a `timecode` tag),
-      // and ffmpeg's mov muxer regenerates a fresh tmcd track from that
-      // tag on output — independent of whether the original standalone
-      // timecode stream was ever mapped in. Verified locally that only
-      // stripping metadata actually removes it; the explicit `-map` above
-      // is kept regardless, since it's still correct for genuinely
-      // multi-track sources (e.g. a second video/audio stream) that
-      // `-map_metadata` alone wouldn't drop.
-      "-map_metadata",
-      "-1",
     ];
     // aspectRatio: null (youtube-full) means "preserve the source" — no
     // crop/pad filter at all. A 9:16 target either center-crops (fills
@@ -103,17 +74,20 @@ export class FfmpegRenderer {
     }
     // Without this, ffmpeg's mp4 muxer writes moov (the atom holding
     // duration/dimensions/sample tables) after mdat (the actual frame
-    // data) — confirmed for real (2026-09-11) on the exact file behind
-    // yet another 2207076 failure, *after* both the stream-mapping and
-    // metadata-stripping fixes above: pulled the real rendered object
-    // back from R2 and found mdat at byte 40, moov only at the very
-    // end. Instagram's Content Publishing API reads a file's leading
-    // bytes to validate it before committing to the full download,
-    // same as most platforms' ingestion — moov-last is a well-known
-    // cause of exactly this class of opaque "processing failed" error.
+    // data) — confirmed for real (2026-09-11) on a real rendered file:
+    // pulled it back from R2 and found mdat at byte 40, moov only at
+    // the very end. Many platforms' ingestion (Instagram's included)
+    // reads a file's leading bytes to validate it before committing to
+    // the full download — moov-last is a well-known cause of an opaque
+    // "processing failed" response from exactly that class of consumer.
     // `+faststart` makes ffmpeg do a second pass moving moov to the
     // front; verified locally that it does (byte 32 instead of the
-    // file's end) against this same real file.
+    // file's end). Kept on its own merits (2026-09-12) — standard
+    // practice for any mp4 served over HTTP/API, not tied to the
+    // specific Instagram failure that first surfaced the moov-last
+    // issue, which (see this file's git history) turned out to have a
+    // different real cause (apps/api's signed media URL's own query
+    // string getting mangled, not the render itself).
     args.push("-c:a", "aac", "-movflags", "+faststart", request.outputPath);
     await execFileAsync("ffmpeg", args);
   }
